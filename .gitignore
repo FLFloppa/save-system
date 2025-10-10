@@ -51,3 +51,4 @@ Packages/com.unity.cinemachine@*/
 *.opendb
 *.VC.db
 *.unitypackage
+*.meta
