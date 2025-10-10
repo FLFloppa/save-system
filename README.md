@@ -45,7 +45,7 @@ The FLFloppa Save System is a production-ready framework that separates serializ
 ## Requirements
 
 * Unity **2022.3 LTS** or newer.
-* `com.cysharp.unitask` (declared in `package.json`).
+* [UniTask](https://github.com/Cysharp/UniTask) installed manually in your project (see below).
 * Newtonsoft.Json (Unity provides `Unity.Plastic.Newtonsoft.Json` in modern LTS releases).
 
 ---
@@ -56,11 +56,14 @@ The FLFloppa Save System is a production-ready framework that separates serializ
 
 1. Open **Window → Package Manager**.
 2. Click the **+** button → **Add package from git URL...**
-3. Paste the repository URL once published:
+3. Paste the repository URL with the package path parameter:
    ```
-   https://github.com/FLFloppa/save-system.git
+   https://github.com/FLFloppa/save-system.git?path=Packages/FLFloppa%20Save%20System
    ```
+   To lock to a specific release, append `#v0.1.0` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
+
+> **Install UniTask manually**: before entering play mode, add UniTask to your project via Git URL (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) or via the asset store. The save system depends on UniTask but does not pull it automatically.
 
 ### Manual copy
 
