@@ -58,7 +58,7 @@ The FLFloppa Save System is a production-ready framework that separates serializ
 2. Click the **+** button → **Add package from git URL...**
 3. Paste the repository URL with the package path parameter:
    ```
-   https://github.com/FLFloppa/save-system.git?path=Packages/FLFloppa%20Save%20System
+   https://github.com/FLFloppa/save-system.git
    ```
    To lock to a specific release, append `#v0.1.0` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
