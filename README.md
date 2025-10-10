@@ -127,6 +127,8 @@ The runtime API centers around `ISaveService`, exposing synchronous and async op
 * __Storage provider inspector__ – Shows resolved paths and shortcuts to Explorer/Finder.
 * __Save Observer window__ – Groups saves by profile/category, renders metadata, and supports custom `VisualElement` previews via `ISaveReadableElement`.
 
+![Save Observer window](Documentation~/images/save_observer.png)
+
 ---
 
 ## Samples
