@@ -1,0 +1,38 @@
+{
+  "name": "com.flfloppa.save-system",
+  "version": "0.1.0",
+  "displayName": "FLFloppa Save System",
+  "description": "Modular, extensible save/load framework for Unity featuring configurable pipelines, versioned migrations, and polished editor tooling.",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/FLFloppa/save-system/tree/main/Packages/FLFloppa%20Save%20System#readme",
+  "changelogUrl": "https://github.com/FLFloppa/save-system/blob/main/Packages/FLFloppa%20Save%20System/CHANGELOG.md",
+  "licensesUrl": "https://github.com/FLFloppa/save-system/blob/main/Packages/FLFloppa%20Save%20System/LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FLFloppa/save-system.git"
+  },
+  "author": {
+    "name": "FLFloppa",
+    "email": "flfloppa@yandex.ru",
+    "url": "https://github.com/FLFloppa"
+  },
+  "keywords": [
+    "save",
+    "data",
+    "serialization",
+    "storage",
+    "unity"
+  ],
+  "category": "Framework",
+  "dependencies": {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Save Service Setup",
+      "description": "Example assets demonstrating a minimal SaveService configuration using JSON serialization and file-system storage.",
+      "path": "Samples~/BasicSetup"
+    }
+  ]
+}

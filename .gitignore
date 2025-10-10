@@ -1,0 +1,53 @@
+# Unity generated folders
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+MemoryCaptures/
+UserSettings/
+
+# Build artifacts
+[Bb]uild/
+[Bb]uilds/
+[Dd]ist/
+[Oo]bj/
+
+# Visual Studio / JetBrains
+.vs/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.csproj.user
+
+# Rider / ReSharper
+*.DotSettings
+
+# Gradle / Android Studio
+.gradle/
+ExportedObj/
+*.apk
+*.aab
+
+# VSCode
+.vscode/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Unity cache
+DerivedDataCache/
+
+# Package manager caches
+Packages/com.unity.timeline@*/
+Packages/com.unity.cinemachine@*/
+
+# Misc
+*.pidb
+*.mdb
+*.opendb
+*.VC.db
+*.unitypackage

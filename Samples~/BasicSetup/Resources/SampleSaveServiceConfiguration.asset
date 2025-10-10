@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81ea369b1575c3a43b057df32c65a16e, type: 3}
+  m_Name: SampleSaveServiceConfiguration
+  m_EditorClassIdentifier: FLFloppa.SaveSystem.Runtime::FLFloppa.SaveSystem.SaveServiceConfiguration
+  _currentVersion: 1
+  _serializer: {fileID: 11400000, guid: 85cd49af51cfbbe47a787a39dcd7babb, type: 2}
+  _storageProvider: {fileID: 11400000, guid: 230d32d1c4be3b9479627923fcd368fe, type: 2}
+  _processingPipeline: {fileID: 11400000, guid: a01ac2cd4c8ade8468d22199f100a130, type: 2}
+  _migrators: []

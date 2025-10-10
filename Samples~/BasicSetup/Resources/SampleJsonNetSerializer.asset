@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cc48e4ec0e67d349a5a88774d49ea43, type: 3}
+  m_Name: SampleJsonNetSerializer
+  m_EditorClassIdentifier: FLFloppa.SaveSystem.Runtime::FLFloppa.SaveSystem.JsonNetSerializerAsset
+  _typeNameHandling: 4
+  _nullValueHandling: 1
+  _missingMemberHandling: 0
+  _defaultValueHandling: 1
+  _formatting: 0
