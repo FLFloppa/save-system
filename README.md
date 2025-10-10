@@ -58,12 +58,19 @@ The FLFloppa Save System is a production-ready framework that separates serializ
 2. Click the **+** button → **Add package from git URL...**
 3. Paste the repository URL with the package path parameter:
    ```
-   https://github.com/FLFloppa/save-system.git
+   https://github.com/FLFloppa/save-system.git?path=Packages/FLFloppa%20Save%20System
    ```
    To lock to a specific release, append `#v0.1.0` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
 
 > **Install UniTask manually**: before entering play mode, add UniTask to your project via Git URL (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) or via the asset store. The save system depends on UniTask but does not pull it automatically.
+
+### Via GitHub release (manual package file)
+
+1. Visit the [GitHub releases page](https://github.com/FLFloppa/save-system/releases) and download the latest `.unitypackage` or packaged `.zip` artifact.
+2. In Unity choose **Assets → Import Package → Custom Package…** and select the downloaded file.
+3. Review the import dialog and click **Import** to bring the package assets into your project (they’ll appear under `Assets/` rather than `Packages/`).
+4. Install UniTask manually as noted above before running the samples.
 
 ### Manual copy
 
