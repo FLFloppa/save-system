@@ -5,9 +5,9 @@
   "description": "Modular, extensible save/load framework for Unity featuring configurable pipelines, versioned migrations, and polished editor tooling.",
   "unity": "2022.3",
   "unityRelease": "0f1",
-  "documentationUrl": "https://github.com/FLFloppa/save-system/tree/main/Packages/FLFloppa%20Save%20System#readme",
-  "changelogUrl": "https://github.com/FLFloppa/save-system/blob/main/Packages/FLFloppa%20Save%20System/CHANGELOG.md",
-  "licensesUrl": "https://github.com/FLFloppa/save-system/blob/main/Packages/FLFloppa%20Save%20System/LICENSE",
+  "documentationUrl": "https://github.com/FLFloppa/save-system/blob/main/README.md",
+  "changelogUrl": "https://github.com/FLFloppa/save-system/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/FLFloppa/save-system/blob/main/LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/FLFloppa/save-system.git"
