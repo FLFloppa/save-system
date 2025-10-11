@@ -26,3 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Sample assets updated to align with new storage provider configuration.
+
+## [0.1.2] - 2025-10-11
+### Added
+- `PlayerPrefsStorageProvider` and matching ScriptableObject configuration for lightweight persistence.
+- Documentation updates describing the PlayerPrefs option alongside file system storage.
+
+### Changed
+- Package metadata bumped to `0.1.2`.

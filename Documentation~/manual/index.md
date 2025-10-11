@@ -33,10 +33,10 @@ Each layer is configured through ScriptableObject assets created from the Unity 
 
 1. Create the following assets from the Project window:
    * `FLFloppa/Save System/Serializer/Newtonsoft Json`
-   * `FLFloppa/Save System/Storage/File System Provider`
+   * A storage provider asset: `File System Provider` (with optional path strategy) or `PlayerPrefs Provider`
    * `FLFloppa/Save System/Processing/All Modules Pipeline`
    * `FLFloppa/Save System/Save Service Configuration`
-2. Open the `Save Service Configuration` asset and assign the serializer, storage provider, and processing pipeline.
+2. Open the `Save Service Configuration` asset and assign the serializer, storage provider, and processing pipeline. When using the PlayerPrefs provider you can set a key prefix to group entries by profile or category.
 3. Optional: add `Data Migrator` assets to handle version upgrades.
 4. Click **Validate & Build Service** to confirm the configuration compiles without errors.
 
@@ -70,6 +70,7 @@ public sealed class SaveExample : MonoBehaviour
 
 * **Save Service Configuration Inspector** – Validates mandatory fields, previews processing order, and highlights migration gaps.
 * **Processing Module Inspectors** – Configure compression/encryption modules with built-in guardrails.
+* **Storage Provider Inspectors** – Configure file-system path strategies or PlayerPrefs key prefixes, with validation and quick actions.
 * **Save Observer Window** – Inspect saved envelopes grouped by profile/category, review metadata and payload previews, and copy summaries for QA.
 
 See the dedicated [Editor Tooling](readable-data.md#editor-tooling) guidance for more detail.

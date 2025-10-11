@@ -131,7 +131,11 @@ The runtime API centers around `ISaveService`, exposing synchronous and async op
 
 * __SaveServiceConfigurationEditor__ – Validates required components, visualises processing order, and surfaces migration warnings.
 * __Processing module inspectors__ – Configure compression/encryption modules with guardrails.
-* __Storage provider inspector__ – Shows resolved paths and shortcuts to Explorer/Finder.
+* __StorageProviderConfiguration__ (`FileSystemStorageProviderAsset`)
+  * Resolves cross-platform paths; inspector shows resolved directory and links to Finder/Explorer.
+  * Combine with path strategy assets (`App Data`, `Game Folder`, `Custom`) to redirect saves without code changes.
+* __StorageProviderConfiguration__ (`PlayerPrefsStorageProviderAsset`)
+  * Persists payloads inside Unity `PlayerPrefs` with a configurable key prefix—ideal for lightweight prototypes or platforms without file access.
 * __Save Observer window__ – Groups saves by profile/category, renders metadata, and supports custom `VisualElement` previews via `ISaveReadableElement`.
 
 Path strategies (App Data, Game Folder, Custom) can be authored as ScriptableObjects and assigned to the storage provider, allowing you to redirect saves without code changes.

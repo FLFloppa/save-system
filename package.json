@@ -1,6 +1,6 @@
 {
   "name": "com.flfloppa.save-system",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "displayName": "FLFloppa Save System",
   "description": "Modular, extensible save/load framework for Unity featuring configurable pipelines, versioned migrations, and polished editor tooling.",
   "unity": "2022.3",
