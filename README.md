@@ -60,7 +60,7 @@ The FLFloppa Save System is a production-ready framework that separates serializ
    ```
    https://github.com/FLFloppa/save-system.git
    ```
-   To lock to a specific release, append `#v0.1.1` (or the desired tag) after the path.
+   To lock to a specific release, append `#v0.1.2` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
 
 > **Install UniTask manually**: before entering play mode, add UniTask to your project via Git URL (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) or via the asset store. The save system depends on UniTask but does not pull it automatically.
@@ -194,9 +194,9 @@ Contributions are very welcome! Please read [`CONTRIBUTING.md`](CONTRIBUTING.md)
 ## Support & questions
 
 * File an issue on GitHub (preferred).
-* Email `support@flfloppa.dev` for private inquiries.
+* Email `flfloppa@yandex.ru` for private inquiries.
 
-We also maintain a living design document under `Documents/` for long-form architectural decisions.
+We also maintain a living design document under `Documentation~/` for long-form architectural decisions.
 
 ---
 
