@@ -23,12 +23,18 @@ namespace FLFloppa.SaveSystem
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemStorageProvider"/> class.
         /// </summary>
-        /// <param name="rootPath">Root directory for save files. Can be relative or absolute.</param>
-        public FileSystemStorageProvider(string rootPath)
+        /// <param name="pathStrategy">Strategy that resolves the root directory for save files.</param>
+        public FileSystemStorageProvider(IStoragePathStrategy pathStrategy)
         {
+            if (pathStrategy == null)
+            {
+                throw new ArgumentNullException(nameof(pathStrategy));
+            }
+
+            var rootPath = pathStrategy.GetPath();
             if (string.IsNullOrWhiteSpace(rootPath))
             {
-                throw new ArgumentException("Root path cannot be null or whitespace.", nameof(rootPath));
+                throw new ArgumentException("Root path cannot be null or whitespace.", nameof(pathStrategy));
             }
 
             _rootPath = Path.GetFullPath(rootPath);

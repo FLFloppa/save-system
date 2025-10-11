@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a009a018500875d4887a91b77d10d2cc, type: 3}
-  m_Name: SampleFileSystemStorageProvider
-  m_EditorClassIdentifier: FLFloppa.SaveSystem.Runtime::FLFloppa.SaveSystem.FileSystemStorageProviderAsset
-  _pathStrategy: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: c5dc709bdf3f39740a1d9a369a25c851, type: 3}
+  m_Name: SampleAppDataPathStrategy
+  m_EditorClassIdentifier: FLFloppa.SaveSystem.Runtime::FLFloppa.SaveSystem.AppDataPathStrategyAsset
+  _subdirectory: Saves

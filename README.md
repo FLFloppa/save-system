@@ -60,7 +60,7 @@ The FLFloppa Save System is a production-ready framework that separates serializ
    ```
    https://github.com/FLFloppa/save-system.git
    ```
-   To lock to a specific release, append `#v0.1.0` (or the desired tag) after the path.
+   To lock to a specific release, append `#v0.1.1` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
 
 > **Install UniTask manually**: before entering play mode, add UniTask to your project via Git URL (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) or via the asset store. The save system depends on UniTask but does not pull it automatically.
@@ -133,6 +133,8 @@ The runtime API centers around `ISaveService`, exposing synchronous and async op
 * __Processing module inspectors__ – Configure compression/encryption modules with guardrails.
 * __Storage provider inspector__ – Shows resolved paths and shortcuts to Explorer/Finder.
 * __Save Observer window__ – Groups saves by profile/category, renders metadata, and supports custom `VisualElement` previews via `ISaveReadableElement`.
+
+Path strategies (App Data, Game Folder, Custom) can be authored as ScriptableObjects and assigned to the storage provider, allowing you to redirect saves without code changes.
 
 ![Save Observer window](Documentation~/images/save_observer.png)
 

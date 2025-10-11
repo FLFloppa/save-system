@@ -32,7 +32,7 @@ namespace FLFloppa.SaveSystem.Editor
             header.style.marginBottom = 4;
             root.Add(header);
 
-            root.Add(CreatePropertyField("_rootDirectory", "Root Directory"));
+            root.Add(CreatePropertyField("_pathStrategy", "Path Strategy"));
 
             var pathLabel = new Label { style = { whiteSpace = WhiteSpace.Normal } };
             root.Add(pathLabel);

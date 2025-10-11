@@ -1,4 +1,3 @@
-using System.IO;
 using UnityEngine;
 
 namespace FLFloppa.SaveSystem
@@ -9,37 +8,21 @@ namespace FLFloppa.SaveSystem
         order = 100)]
     public sealed class FileSystemStorageProviderAsset : StorageProviderConfiguration
     {
-        [SerializeField]
-        [Tooltip("The root directory where save data will be stored.")]
-        private string _rootDirectory = "Saves";
+        private const string DefaultSubdirectory = "Saves";
 
-        public string RootDirectory => _rootDirectory;
+        [SerializeField]
+        [Tooltip("Strategy asset that resolves the root directory for save data. If omitted, Application.persistentDataPath/Saves is used.")]
+        private StoragePathStrategyConfiguration _pathStrategy;
+
+        public StoragePathStrategyConfiguration PathStrategy => _pathStrategy;
 
         public override IStorageProvider Build()
         {
-            var rootPath = ResolveRootPath(_rootDirectory);
-            return new FileSystemStorageProvider(rootPath);
-        }
+            var strategy = _pathStrategy != null
+                ? _pathStrategy.Build()
+                : new AppDataPathStrategy(DefaultSubdirectory);
 
-        private static string ResolveRootPath(string directory)
-        {
-            if (string.IsNullOrWhiteSpace(directory))
-            {
-                throw new SaveSystemException("Root directory cannot be null or whitespace.");
-            }
-
-            if (Path.IsPathRooted(directory))
-            {
-                return directory;
-            }
-
-            // Default to persistent data path in builds and project root in editor for convenience.
-#if UNITY_EDITOR
-            var projectPath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            return Path.Combine(projectPath, directory);
-#else
-            return Path.Combine(Application.persistentDataPath, directory);
-#endif
+            return new FileSystemStorageProvider(strategy);
         }
     }
 }
