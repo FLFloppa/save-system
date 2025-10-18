@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using FLFloppa.EditorHelpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -45,10 +46,9 @@ namespace FLFloppa.SaveSystem.Editor
         }
 
         private ObjectField _configurationField;
-        private Button _refreshButton;
-        private ScrollView _contentScroll;
-        private Label _statusLabel;
         private ToolbarSearchField _searchField;
+        private HelpBox _statusBox;
+        private ScrollView _entriesScroll;
 
         private SaveServiceConfiguration _queuedConfiguration;
         private string _searchFilter = string.Empty;
@@ -60,77 +60,74 @@ namespace FLFloppa.SaveSystem.Editor
         public void CreateGUI()
         {
             var root = rootVisualElement;
-            root.style.paddingLeft = 8;
-            root.style.paddingRight = 8;
-            root.style.paddingTop = 6;
-            root.style.paddingBottom = 6;
-            root.style.flexDirection = FlexDirection.Column;
+            root.Clear();
             root.style.flexGrow = 1f;
 
-            var header = new VisualElement
+            var contentRoot = InspectorUi.Layout.CreateRoot();
+            contentRoot.style.flexGrow = 1f;
+            root.Add(contentRoot);
+
+            var configCard = InspectorUi.Cards.Create(
+                "Configuration",
+                out var configContent,
+                "Select a configuration and manage observed save data.");
+
+            _configurationField = new ObjectField("Configuration")
+            {
+                objectType = typeof(SaveServiceConfiguration)
+            };
+            _configurationField.style.flexGrow = 1f;
+            _configurationField.style.minWidth = 200;
+            _configurationField.RegisterValueChangedCallback(_ => RefreshEntries());
+            configContent.Add(_configurationField);
+
+            var controlsRow = new VisualElement
             {
                 style =
                 {
                     flexDirection = FlexDirection.Row,
-                    alignItems = Align.Center,
-                    marginBottom = 6
+                    flexWrap = Wrap.Wrap,
+                    marginTop = InspectorUi.Layout.ButtonSpacing
                 }
             };
-
-            _configurationField = new ObjectField("Configuration")
-            {
-                objectType = typeof(SaveServiceConfiguration),
-                style =
-                {
-                    flexGrow = 1f,
-                    minWidth = 180
-                }
-            };
-            _configurationField.RegisterValueChangedCallback(_ => RefreshEntries());
-            header.Add(_configurationField);
-
-            _refreshButton = new Button(RefreshEntries)
-            {
-                text = "Refresh",
-                style =
-                {
-                    marginLeft = 6
-                }
-            };
-            header.Add(_refreshButton);
+            controlsRow.Add(InspectorUi.Controls.CreateActionButton("Refresh", RefreshEntries));
 
             _searchField = new ToolbarSearchField();
-            _searchField.style.marginLeft = 6;
+            _searchField.style.flexGrow = 1f;
             _searchField.style.minWidth = 160;
+            _searchField.style.marginLeft = InspectorUi.Layout.ButtonSpacing;
             _searchField.RegisterValueChangedCallback(evt =>
             {
                 _searchFilter = evt.newValue?.Trim() ?? string.Empty;
                 RebuildContent(_cachedEntries);
             });
-            header.Add(_searchField);
+            controlsRow.Add(_searchField);
 
-            root.Add(header);
+            configContent.Add(controlsRow);
+            contentRoot.Add(configCard);
 
-            _statusLabel = new Label
-            {
-                style =
-                {
-                    unityTextAlign = TextAnchor.UpperLeft,
-                    whiteSpace = WhiteSpace.Normal,
-                    marginBottom = 6
-                }
-            };
-            root.Add(_statusLabel);
+            var statusCard = InspectorUi.Cards.Create(
+                "Status",
+                out var statusContent,
+                "Live observer status and warnings.");
+            _statusBox = InspectorUi.Controls.AddHelpBox(statusContent, string.Empty, HelpBoxMessageType.Info);
+            _statusBox.style.display = DisplayStyle.None;
+            contentRoot.Add(statusCard);
 
-            _contentScroll = new ScrollView
+            var entriesCard = InspectorUi.Cards.Create(
+                "Entries",
+                out var entriesContent,
+                "Browse saved data grouped by profile and category.");
+            _entriesScroll = new ScrollView
             {
                 style =
                 {
                     flexGrow = 1f,
-                    flexShrink = 1f
+                    flexDirection = FlexDirection.Column
                 }
             };
-            root.Add(_contentScroll);
+            entriesContent.Add(_entriesScroll);
+            contentRoot.Add(entriesCard);
 
             if (_queuedConfiguration != null)
             {
@@ -149,25 +146,25 @@ namespace FLFloppa.SaveSystem.Editor
         {
             _cachedEntries.Clear();
             _warnings.Clear();
-            _contentScroll.Clear();
+            _entriesScroll?.Clear();
             SetStatus(string.Empty);
 
             var configuration = _configurationField.value as SaveServiceConfiguration;
             if (configuration == null)
             {
-                SetStatus("Select a `SaveServiceConfiguration` to inspect saves.");
+                SetStatus("Select a `SaveServiceConfiguration` to inspect saves.", HelpBoxMessageType.Info);
                 return;
             }
 
             if (configuration.Serializer == null)
             {
-                SetStatus("Configuration is missing a serializer asset.");
+                SetStatus("Configuration is missing a serializer asset.", HelpBoxMessageType.Error);
                 return;
             }
 
             if (configuration.StorageProvider == null)
             {
-                SetStatus("Configuration is missing a storage provider asset.");
+                SetStatus("Configuration is missing a storage provider asset.", HelpBoxMessageType.Error);
                 return;
             }
 
@@ -178,7 +175,7 @@ namespace FLFloppa.SaveSystem.Editor
             }
             catch (Exception ex)
             {
-                SetStatus($"Failed to build serializer: {ex.Message}");
+                SetStatus($"Failed to build serializer: {ex.Message}", HelpBoxMessageType.Error);
                 return;
             }
 
@@ -190,26 +187,26 @@ namespace FLFloppa.SaveSystem.Editor
             }
             catch (Exception ex)
             {
-                SetStatus($"Failed to build storage provider: {ex.Message}");
+                SetStatus($"Failed to build storage provider: {ex.Message}", HelpBoxMessageType.Error);
                 return;
             }
 
             if (fileSystemProvider == null)
             {
-                SetStatus("Save Observer currently supports `FileSystemStorageProvider` only.");
+                SetStatus("Save Observer currently supports `FileSystemStorageProvider` only.", HelpBoxMessageType.Warning);
                 return;
             }
 
             var rootPath = fileSystemProvider.RootPath;
             if (string.IsNullOrWhiteSpace(rootPath))
             {
-                SetStatus("Storage root path is empty.");
+                SetStatus("Storage root path is empty.", HelpBoxMessageType.Warning);
                 return;
             }
 
             if (!Directory.Exists(rootPath))
             {
-                SetStatus($"Storage directory does not exist yet: {rootPath}");
+                SetStatus($"Storage directory does not exist yet: {rootPath}", HelpBoxMessageType.Info);
                 return;
             }
 
@@ -230,13 +227,13 @@ namespace FLFloppa.SaveSystem.Editor
             }
             catch (Exception ex)
             {
-                SetStatus($"Failed to enumerate saves: {ex.Message}");
+                SetStatus($"Failed to enumerate saves: {ex.Message}", HelpBoxMessageType.Error);
                 return;
             }
 
             if (_cachedEntries.Count == 0)
             {
-                SetStatus("No save files found in the storage directory.");
+                SetStatus("No save files found in the storage directory.", HelpBoxMessageType.Info);
                 DisplayWarnings();
                 return;
             }
@@ -251,7 +248,7 @@ namespace FLFloppa.SaveSystem.Editor
         /// <param name="entries">Entries to display.</param>
         private void RebuildContent(IEnumerable<SaveEntry> entries)
         {
-            _contentScroll.Clear();
+            _entriesScroll?.Clear();
 
             var filter = string.IsNullOrEmpty(_searchFilter)
                 ? null
@@ -264,7 +261,10 @@ namespace FLFloppa.SaveSystem.Editor
 
             if (!grouped.Any())
             {
-                SetStatus(string.IsNullOrEmpty(_searchFilter) ? "No save files found in the storage directory." : "No saves match the current search filter.");
+                var message = string.IsNullOrEmpty(_searchFilter)
+                    ? "No save files found in the storage directory."
+                    : "No saves match the current search filter.";
+                SetStatus(message, HelpBoxMessageType.Info);
                 return;
             }
 
@@ -272,15 +272,7 @@ namespace FLFloppa.SaveSystem.Editor
 
             foreach (var profileGroup in grouped)
             {
-                var profileFoldout = new Foldout
-                {
-                    text = $"Profile: {profileGroup.Key}",
-                    value = false,
-                    style =
-                    {
-                        marginBottom = 6
-                    }
-                };
+                var profileCard = InspectorUi.Cards.Create($"Profile: {profileGroup.Key}", out var profileContent);
 
                 foreach (var categoryGroup in profileGroup
                              .GroupBy(e => e.Category)
@@ -292,20 +284,20 @@ namespace FLFloppa.SaveSystem.Editor
                         value = false,
                         style =
                         {
-                            marginLeft = 10,
                             marginBottom = 4
                         }
                     };
+                    categoryFoldout.style.marginLeft = 4;
 
                     foreach (var entry in categoryGroup.OrderBy(e => e.Key, StringComparer.OrdinalIgnoreCase))
                     {
                         categoryFoldout.Add(BuildEntryElement(entry));
                     }
 
-                    profileFoldout.Add(categoryFoldout);
+                    profileContent.Add(categoryFoldout);
                 }
 
-                _contentScroll.Add(profileFoldout);
+                _entriesScroll.Add(profileCard);
             }
         }
 
@@ -316,77 +308,20 @@ namespace FLFloppa.SaveSystem.Editor
         /// <returns>UI element representing the entry.</returns>
         private VisualElement BuildEntryElement(SaveEntry entry)
         {
-            var card = new VisualElement
-            {
-                style =
-                {
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    borderBottomWidth = 1,
-                    borderBottomColor = new Color(0.2f, 0.2f, 0.2f, 0.3f),
-                    borderBottomLeftRadius = 2,
-                    borderBottomRightRadius = 2,
-                    borderTopLeftRadius = 2,
-                    borderTopRightRadius = 2,
-                    marginBottom = 4,
-                    backgroundColor = new Color(0.15f, 0.15f, 0.15f, 0.25f)
-                }
-            };
+            var card = InspectorUi.Cards.Create(entry.Key, out var content, entry.RelativePath);
 
-            var header = new VisualElement
-            {
-                style =
-                {
-                    flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.SpaceBetween,
-                    marginBottom = 4
-                }
-            };
-
-            var titleLabel = new Label(entry.Key)
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 13
-                }
-            };
-            header.Add(titleLabel);
-
-            var infoLabel = new Label($"{EditorUtility.FormatBytes(entry.FileSize)} · {entry.LastWriteTime:G}")
-            {
-                style =
-                {
-                    unityTextAlign = TextAnchor.MiddleRight
-                }
-            };
-            header.Add(infoLabel);
-
-            card.Add(header);
-
-            card.Add(new Label(entry.RelativePath)
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Italic,
-                    fontSize = 11,
-                    color = new Color(0.8f, 0.8f, 0.8f, 0.8f),
-                    marginBottom = 4
-                }
-            });
+            content.Add(InspectorUi.Controls.CreateSummaryLabel($"{EditorUtility.FormatBytes(entry.FileSize)} · {entry.LastWriteTime:G}"));
 
             if (entry.Error != null)
             {
-                card.Add(new HelpBox(entry.Error.Message, HelpBoxMessageType.Error));
-                card.Add(BuildFooter(entry));
+                InspectorUi.Controls.AddHelpBox(content, entry.Error.Message, HelpBoxMessageType.Error);
+                content.Add(BuildFooter(entry));
                 return card;
             }
 
             if (!string.IsNullOrWhiteSpace(entry.Envelope?.Readable))
             {
-                card.Add(new Label(entry.Envelope.Readable)
+                content.Add(new Label(entry.Envelope.Readable)
                 {
                     style =
                     {
@@ -398,14 +333,10 @@ namespace FLFloppa.SaveSystem.Editor
 
             if (entry.DecodeError != null)
             {
-                card.Add(new HelpBox($"Failed to decode payload: {entry.DecodeError.Message}", HelpBoxMessageType.Warning)
-                {
-                    style =
-                    {
-                        whiteSpace = WhiteSpace.Normal,
-                        marginBottom = 4
-                    }
-                });
+                InspectorUi.Controls.AddHelpBox(
+                    content,
+                    $"Failed to decode payload: {entry.DecodeError.Message}",
+                    HelpBoxMessageType.Warning);
             }
             else if (!string.IsNullOrEmpty(entry.DataPreview))
             {
@@ -428,7 +359,7 @@ namespace FLFloppa.SaveSystem.Editor
                 previewField.style.whiteSpace = WhiteSpace.Pre;
                 previewField.style.maxHeight = 220;
                 previewFoldout.Add(previewField);
-                card.Add(previewFoldout);
+                content.Add(previewFoldout);
             }
 
             if (entry.Envelope?.Metadata != null)
@@ -436,22 +367,18 @@ namespace FLFloppa.SaveSystem.Editor
                 if (ReadableUtility.TryGetReadableElement(entry.Envelope.Metadata, out var metadataElement))
                 {
                     metadataElement.style.marginBottom = 4;
-                    card.Add(metadataElement);
+                    content.Add(metadataElement);
                 }
                 else if (ReadableUtility.TryGetReadableString(entry.Envelope.Metadata, out var metadataReadable))
                 {
-                    card.Add(new HelpBox(metadataReadable, HelpBoxMessageType.Info)
-                    {
-                        style =
-                        {
-                            whiteSpace = WhiteSpace.Normal,
-                            marginBottom = 4
-                        }
-                    });
+                    InspectorUi.Controls.AddHelpBox(
+                        content,
+                        metadataReadable,
+                        HelpBoxMessageType.Info);
                 }
                 else
                 {
-                    card.Add(new Label(entry.Envelope.Metadata.ToString())
+                    content.Add(new Label(entry.Envelope.Metadata.ToString())
                     {
                         style =
                         {
@@ -462,7 +389,7 @@ namespace FLFloppa.SaveSystem.Editor
                 }
             }
 
-            card.Add(BuildFooter(entry));
+            content.Add(BuildFooter(entry));
             return card;
         }
 
@@ -581,10 +508,23 @@ namespace FLFloppa.SaveSystem.Editor
         /// Sets the window status label to the provided message.
         /// </summary>
         /// <param name="message">Status text (hidden when empty).</param>
-        private void SetStatus(string message)
+        private void SetStatus(string message, HelpBoxMessageType type = HelpBoxMessageType.Info)
         {
-            _statusLabel.text = message;
-            _statusLabel.style.display = string.IsNullOrEmpty(message) ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_statusBox == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(message))
+            {
+                _statusBox.style.display = DisplayStyle.None;
+                _statusBox.text = string.Empty;
+                return;
+            }
+
+            _statusBox.style.display = DisplayStyle.Flex;
+            _statusBox.messageType = type;
+            _statusBox.text = message;
         }
 
         /// <summary>
@@ -598,13 +538,13 @@ namespace FLFloppa.SaveSystem.Editor
             }
 
             var warningText = string.Join("\n", _warnings);
-            if (string.IsNullOrEmpty(_statusLabel.text))
+            if (_statusBox == null || _statusBox.style.display == DisplayStyle.None)
             {
-                SetStatus(warningText);
+                SetStatus(warningText, HelpBoxMessageType.Warning);
             }
             else
             {
-                SetStatus(_statusLabel.text + "\n" + warningText);
+                SetStatus(_statusBox.text + "\n" + warningText, HelpBoxMessageType.Warning);
             }
         }
 

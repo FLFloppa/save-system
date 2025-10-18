@@ -46,6 +46,7 @@ The FLFloppa Save System is a production-ready framework that separates serializ
 
 * Unity **2022.3 LTS** or newer.
 * [UniTask](https://github.com/Cysharp/UniTask) installed manually in your project (see below).
+* [FLFloppa Editor Helpers](https://github.com/FLFloppa/editor-helpers.git) installed manually (UI Toolkit helpers are not bundled with the save system).
 * Newtonsoft.Json (Unity provides `Unity.Plastic.Newtonsoft.Json` in modern LTS releases).
 
 ---
@@ -60,17 +61,17 @@ The FLFloppa Save System is a production-ready framework that separates serializ
    ```
    https://github.com/FLFloppa/save-system.git
    ```
-   To lock to a specific release, append `#v0.1.2` (or the desired tag) after the path.
+   To lock to a specific release, append `#v0.2.0` (or the desired tag) after the path.
 4. Unity installs the package and its samples.
 
-> **Install UniTask manually**: before entering play mode, add UniTask to your project via Git URL (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) or via the asset store. The save system depends on UniTask but does not pull it automatically.
+> **Install dependencies manually**: before entering play mode, add UniTask (`https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`) and FLFloppa Editor Helpers (`https://github.com/FLFloppa/editor-helpers.git`) to your project via Git URL or preferred package workflow. The save system depends on these packages but does not pull them automatically.
 
 ### Via GitHub release (manual package file)
 
 1. Visit the [GitHub releases page](https://github.com/FLFloppa/save-system/releases) and download the latest `.unitypackage` or packaged `.zip` artifact.
 2. In Unity choose **Assets → Import Package → Custom Package…** and select the downloaded file.
 3. Review the import dialog and click **Import** to bring the package assets into your project (they’ll appear under `Assets/` rather than `Packages/`).
-4. Install UniTask manually as noted above before running the samples.
+4. Install UniTask and FLFloppa Editor Helpers manually as noted above before running the samples.
 
 ### Manual copy
 

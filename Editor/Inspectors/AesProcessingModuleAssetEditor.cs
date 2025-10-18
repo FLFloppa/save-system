@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -16,72 +17,55 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("AES Encryption Module");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
-
-            root.Add(new Label("Encrypts save payloads with AES/CBC. Keys must be 128/192/256-bit and IV must be 128-bit."));
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "AES Encryption Module",
+                "Encrypts payloads with AES/CBC. Keys must be 128/192/256-bit and IV must be 128-bit."));
 
             var keyDataProp = so.FindProperty("_keyData");
             var keyEncodingProp = so.FindProperty("_keyEncoding");
             var ivDataProp = so.FindProperty("_ivData");
             var ivEncodingProp = so.FindProperty("_ivEncoding");
 
-            root.Add(CreatePropertyField(keyDataProp, "Key Data"));
-            root.Add(CreatePropertyField(keyEncodingProp, "Key Encoding"));
-            root.Add(CreatePropertyField(ivDataProp, "IV Data"));
-            root.Add(CreatePropertyField(ivEncodingProp, "IV Encoding"));
+            var configurationCard = InspectorUi.Cards.Create("Configuration", out var configurationContent);
+            configurationContent.Add(InspectorUi.Controls.CreatePropertyField(keyDataProp, "Key Data"));
+            configurationContent.Add(InspectorUi.Controls.CreatePropertyField(keyEncodingProp, "Key Encoding"));
+            configurationContent.Add(InspectorUi.Controls.CreatePropertyField(ivDataProp, "IV Data"));
+            configurationContent.Add(InspectorUi.Controls.CreatePropertyField(ivEncodingProp, "IV Encoding"));
 
-            var validation = new HelpBox(string.Empty, HelpBoxMessageType.Info);
-            validation.style.marginTop = 4;
-            root.Add(validation);
+            HelpBox validationBox = null;
 
-            var buttonRow = new VisualElement
+            var actionsRow = new VisualElement
             {
                 style =
                 {
                     flexDirection = FlexDirection.Row,
-                    marginTop = 4
+                    flexWrap = Wrap.Wrap,
+                    marginTop = InspectorUi.Layout.ButtonSpacing
                 }
             };
 
-            var generateKeyButton = new Button(() =>
+            actionsRow.Add(InspectorUi.Controls.CreateActionButton("Generate 256-bit Key", () =>
             {
-                AssignRandomBytes(keyDataProp, keyEncodingProp, 32, validation);
-            })
-            {
-                text = "Generate 256-bit Key"
-            };
-            generateKeyButton.style.marginRight = 4;
+                AssignRandomBytes(keyDataProp, keyEncodingProp, 32, validationBox);
+            }));
 
-            var generateIvButton = new Button(() =>
+            actionsRow.Add(InspectorUi.Controls.CreateActionButton("Generate IV", () =>
             {
-                AssignRandomBytes(ivDataProp, ivEncodingProp, 16, validation);
-            })
-            {
-                text = "Generate IV"
-            };
+                AssignRandomBytes(ivDataProp, ivEncodingProp, 16, validationBox);
+            }));
 
-            buttonRow.Add(generateKeyButton);
-            buttonRow.Add(generateIvButton);
-            root.Add(buttonRow);
+            configurationContent.Add(actionsRow);
 
-            root.RegisterCallback<GeometryChangedEvent>(_ => UpdateValidation(validation));
-            root.schedule.Execute(() => UpdateValidation(validation)).Every(500);
+            var validationCard = InspectorUi.Cards.Create("Validation", out var validationContent);
+            validationBox = InspectorUi.Controls.AddHelpBox(validationContent, string.Empty, HelpBoxMessageType.Info);
+
+            root.Add(configurationCard);
+            root.Add(validationCard);
+
+            root.RegisterCallback<GeometryChangedEvent>(_ => UpdateValidation(validationBox));
+            root.schedule.Execute(() => UpdateValidation(validationBox)).Every(500);
 
             return root;
         }
@@ -166,16 +150,5 @@ namespace FLFloppa.SaveSystem.Editor
             return new string(chars);
         }
 
-        private PropertyField CreatePropertyField(SerializedProperty property, string label)
-        {
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
-        }
     }
 }

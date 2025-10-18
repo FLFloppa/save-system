@@ -1,4 +1,5 @@
 using System;
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,33 +15,22 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("Sample Player Profile Migrator");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "Sample Player Profile Migrator",
+                "Demonstrates how to upgrade player profile data between versions."));
 
-            root.Add(new Label("Demonstrates how to upgrade player profile data between versions."));
+            var configurationCard = InspectorUi.Cards.Create("Configuration", out var configurationContent);
+            configurationContent.Add(CreatePropertyField(so.FindProperty("_fromVersion"), "From Version"));
+            configurationContent.Add(CreatePropertyField(so.FindProperty("_toVersion"), "To Version"));
+            configurationContent.Add(CreatePropertyField(so.FindProperty("_defaultItemId"), "Default Item Id"));
 
-            root.Add(CreatePropertyField("_fromVersion", "From Version"));
-            root.Add(CreatePropertyField("_toVersion", "To Version"));
-            root.Add(CreatePropertyField("_defaultItemId", "Default Item Id"));
+            var validationCard = InspectorUi.Cards.Create("Validation", out var validationContent);
+            var validation = InspectorUi.Controls.AddHelpBox(validationContent, string.Empty, HelpBoxMessageType.Info);
 
-            var validation = new HelpBox(string.Empty, HelpBoxMessageType.Info);
-            validation.style.marginTop = 4;
-            root.Add(validation);
+            root.Add(configurationCard);
+            root.Add(validationCard);
 
             root.RegisterCallback<GeometryChangedEvent>(_ => RefreshValidation(validation));
             root.schedule.Execute(() => RefreshValidation(validation)).Every(500);
@@ -72,17 +62,11 @@ namespace FLFloppa.SaveSystem.Editor
             }
         }
 
-        private PropertyField CreatePropertyField(string propertyPath, string label)
+        private VisualElement CreatePropertyField(SerializedProperty property, string label)
         {
-            var property = serializedObject.FindProperty(propertyPath);
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }

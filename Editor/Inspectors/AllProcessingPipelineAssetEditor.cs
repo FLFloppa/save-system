@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -15,35 +16,34 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("All Modules Processing Pipeline");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "All Modules Processing Pipeline",
+                "Modules execute sequentially on save and in reverse on load."));
 
-            root.Add(new Label("Modules are executed in order during save and reversed during load."));
+            var modulesCard = InspectorUi.Cards.Create("Modules", out var modulesContent);
+            var modulesProperty = so.FindProperty("_modules");
+            modulesContent.Add(CreatePropertyField(modulesProperty, "Processing Modules"));
 
-            var modulesField = CreatePropertyField("_modules", "Processing Modules");
-            root.Add(modulesField);
+            var previewCard = InspectorUi.Cards.Create(
+                "Runtime Preview",
+                out var previewContent,
+                "Preview the runtime processing order produced by this configuration.");
+            var moduleList = InspectorUi.ExpandableLists.Create(
+                "Module Order",
+                "Modules execute sequentially when saving and in reverse when loading.",
+                expanded: true);
+            previewContent.Add(moduleList.Root);
+            var previewBox = InspectorUi.Controls.AddHelpBox(previewContent, string.Empty, HelpBoxMessageType.Info);
 
-            var previewBox = new HelpBox(string.Empty, HelpBoxMessageType.Info);
-            previewBox.style.marginTop = 4;
-            root.Add(previewBox);
+            root.Add(modulesCard);
+            root.Add(previewCard);
 
             void RefreshPreview()
             {
+                moduleList.ClearItems();
+
                 try
                 {
                     var pipelineAsset = (AllProcessingPipelineAsset)target;
@@ -54,23 +54,23 @@ namespace FLFloppa.SaveSystem.Editor
                     {
                         previewBox.messageType = HelpBoxMessageType.Info;
                         previewBox.text = "No modules configured – data will be stored without additional processing.";
+                        moduleList.ShowEmptyState("Pipeline currently empty.");
                         return;
                     }
 
-                    var builder = new StringBuilder();
-                    builder.AppendLine("Module Execution Order:");
+                    previewBox.messageType = HelpBoxMessageType.Info;
+                    previewBox.text = $"Configured {chain.Count} module(s).";
+
                     for (var i = 0; i < chain.Count; i++)
                     {
-                        builder.AppendLine($"{i + 1}. {chain[i].GetType().Name}");
+                        moduleList.AddItem($"{i + 1}. {chain[i].GetType().Name}");
                     }
-
-                    previewBox.messageType = HelpBoxMessageType.Info;
-                    previewBox.text = builder.ToString();
                 }
                 catch (Exception ex)
                 {
                     previewBox.messageType = HelpBoxMessageType.Warning;
                     previewBox.text = $"Unable to build pipeline: {ex.Message}";
+                    moduleList.ShowEmptyState("Preview unavailable.");
                 }
             }
 
@@ -80,17 +80,11 @@ namespace FLFloppa.SaveSystem.Editor
             return root;
         }
 
-        private PropertyField CreatePropertyField(string propertyPath, string label)
+        private VisualElement CreatePropertyField(SerializedProperty property, string label)
         {
-            var property = serializedObject.FindProperty(propertyPath);
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }

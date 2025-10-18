@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,10 +15,8 @@ namespace FLFloppa.SaveSystem.Editor
     [CustomEditor(typeof(SaveServiceConfiguration))]
     public sealed class SaveServiceConfigurationEditor : UnityEditor.Editor
     {
-        private const string ValidationContainerName = "SaveServiceConfigurationEditor_Validation";
-
         private IVisualElementScheduledItem _scheduledValidation;
-        private VisualElement _latestValidationContainer;
+        private InspectorUi.ExpandableLists.ListControl _validationList;
 
         /// <summary>
         /// Builds the inspector UI using UI Toolkit controls.
@@ -27,29 +26,32 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new ScrollView
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            root.Add(BuildHeader());
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "FLFloppa Save Service Configuration",
+                "Configure the serializer, storage provider, processing pipeline, and data migrators used to build the runtime save service."));
+
             root.Add(CreateCoreSection(so));
             root.Add(CreateMigratorsSection(so));
             root.Add(CreatePipelinePreview());
             root.Add(CreateStorageInfo());
-            root.Add(CreateActionsRow());
+            root.Add(CreateActionsCard());
 
-            var validation = new VisualElement { name = ValidationContainerName };
-            root.Add(validation);
+            var validationCard = InspectorUi.Cards.Create(
+                "Validation",
+                out var validationContent,
+                "Live status of the configuration health.");
+            var validationList = InspectorUi.ExpandableLists.Create(
+                "Current Findings",
+                "Warnings and guidance refresh automatically.",
+                expanded: true);
+            validationContent.Add(validationList.Root);
+            _validationList = validationList;
+            root.Add(validationCard);
 
-            RefreshValidation(validation);
-            _scheduledValidation = root.schedule.Execute(() => RefreshValidation(validation)).Every(500);
+            RefreshValidation(validationList);
+            _scheduledValidation = root.schedule.Execute(() => RefreshValidation(_validationList)).Every(500);
 
             return root;
         }
@@ -59,53 +61,38 @@ namespace FLFloppa.SaveSystem.Editor
         /// </summary>
         private void ScheduleValidationRefresh()
         {
-            _scheduledValidation?.Pause();
-            _scheduledValidation?.Resume();
+            if (_validationList != null)
+            {
+                RefreshValidation(_validationList);
+            }
         }
 
         /// <summary>
         /// Creates the inspector header element.
         /// </summary>
         /// <returns>Header container.</returns>
-        private static VisualElement BuildHeader()
-        {
-            var container = new VisualElement();
-            container.Add(new Label("FLFloppa Save Service Configuration")
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 14,
-                    marginBottom = 4
-                }
-            });
-
-            container.Add(new Label("Configure the serializer, storage provider, processing pipeline, and data migrators used to build the runtime save service."));
-
-            var spacer = new VisualElement();
-            spacer.style.marginBottom = 6;
-            container.Add(spacer);
-
-            return container;
-        }
-
         /// <summary>
         /// Creates the core configuration section (version, serializer, storage, pipeline).
         /// </summary>
         /// <param name="so">Serialized object for property binding.</param>
-        /// <returns>Foldout containing core properties.</returns>
+        /// <returns>Card containing core properties.</returns>
         private VisualElement CreateCoreSection(SerializedObject so)
         {
-            var foldout = new Foldout { text = "Core Components", value = true };
+            var card = InspectorUi.Cards.Create(
+                "Core Components",
+                out var content,
+                "Primary assets used by the save service.");
 
-            foldout.Add(CreatePropertyField(so.FindProperty("_currentVersion"), "Current Version"));
-            foldout.Add(CreatePropertyField(so.FindProperty("_serializer"), "Serializer"));
+            content.Add(CreatePropertyField(so.FindProperty("_currentVersion"), "Current Version"));
+            content.Add(CreatePropertyField(so.FindProperty("_serializer"), "Serializer"));
+
             var storageField = CreatePropertyField(so.FindProperty("_storageProvider"), "Storage Provider");
             storageField.RegisterValueChangeCallback(_ => ScheduleValidationRefresh());
-            foldout.Add(storageField);
-            foldout.Add(CreatePropertyField(so.FindProperty("_processingPipeline"), "Processing Pipeline"));
+            content.Add(storageField);
 
-            return foldout;
+            content.Add(CreatePropertyField(so.FindProperty("_processingPipeline"), "Processing Pipeline"));
+
+            return card;
         }
 
         /// <summary>
@@ -115,19 +102,59 @@ namespace FLFloppa.SaveSystem.Editor
         /// <returns>Foldout containing migrator configuration.</returns>
         private VisualElement CreateMigratorsSection(SerializedObject so)
         {
-            var foldout = new Foldout { text = "Data Migrators", value = true };
-            var migrators = CreatePropertyField(so.FindProperty("_migrators"), "Migrators");
-            foldout.Add(migrators);
+            var card = InspectorUi.Cards.Create(
+                "Data Migrators",
+                out var content,
+                "Define migration steps required when upgrading save versions.");
 
-            var hint = new HelpBox(
-                "Migrators are executed based on their FromVersion. Ensure each version step is covered.",
-                HelpBoxMessageType.Info)
+            var migratorsField = CreatePropertyField(so.FindProperty("_migrators"), "Migrators");
+            content.Add(migratorsField);
+
+            InspectorUi.Controls.AddHelpBox(
+                content,
+                "Migrators execute based on their `FromVersion`. Ensure each version step is covered.",
+                HelpBoxMessageType.Info);
+
+            var summaryList = InspectorUi.ExpandableLists.Create(
+                "Resolved Migrator Chain",
+                "Preview the runtime order and version transitions produced by the configured migrators.",
+                expanded: false);
+            content.Add(summaryList.Root);
+
+            void RefreshMigratorSummary()
             {
-                style = { marginTop = 4 }
-            };
+                summaryList.ClearItems();
 
-            foldout.Add(hint);
-            return foldout;
+                try
+                {
+                    var config = (SaveServiceConfiguration)target;
+                    var runtimeMigrators = config.Migrators?
+                        .Where(m => m != null)
+                        .Select(m => m.Build())
+                        .OrderBy(m => m.FromVersion)
+                        .ToList();
+
+                    if (runtimeMigrators == null || runtimeMigrators.Count == 0)
+                    {
+                        summaryList.ShowEmptyState("No migrators configured.");
+                        return;
+                    }
+
+                    foreach (var migrator in runtimeMigrators)
+                    {
+                        summaryList.AddItem($"{migrator.FromVersion} → {migrator.ToVersion} · {migrator.GetType().Name}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    summaryList.ShowEmptyState($"Unable to preview migrators: {ex.Message}");
+                }
+            }
+
+            content.RegisterCallback<GeometryChangedEvent>(_ => RefreshMigratorSummary());
+            content.schedule.Execute(RefreshMigratorSummary).Every(500);
+
+            return card;
         }
 
         /// <summary>
@@ -136,66 +163,75 @@ namespace FLFloppa.SaveSystem.Editor
         /// <returns>Foldout containing pipeline preview.</returns>
         private VisualElement CreatePipelinePreview()
         {
-            var container = new Foldout { text = "Pipeline Preview", value = true };
-            var list = new IMGUIContainer(() =>
+            var card = InspectorUi.Cards.Create(
+                "Pipeline Preview",
+                out var content,
+                "Visualize the runtime processing modules applied to save data.");
+
+            var moduleList = InspectorUi.ExpandableLists.Create(
+                "Module Order",
+                "Modules run sequentially on save and reversed on load.",
+                expanded: true);
+            content.Add(moduleList.Root);
+
+            var statusBox = InspectorUi.Controls.AddHelpBox(content, string.Empty, HelpBoxMessageType.Info);
+
+            void RefreshPreview()
             {
+                moduleList.ClearItems();
+
                 try
                 {
                     var config = (SaveServiceConfiguration)target;
-                    var pipeline = config.ProcessingPipeline;
+                    var pipelineConfig = config.ProcessingPipeline;
 
-                    if (pipeline == null)
+                    if (pipelineConfig == null)
                     {
-                        EditorGUILayout.HelpBox("Assign a processing pipeline configuration to preview the module order.", MessageType.Info);
+                        statusBox.messageType = HelpBoxMessageType.Info;
+                        statusBox.text = "Assign a processing pipeline asset to preview module order.";
+                        moduleList.ShowEmptyState("No pipeline assigned.");
                         return;
                     }
 
-                    EditorGUILayout.LabelField("Module Order", EditorStyles.boldLabel);
-
-                    var modulesProp = serializedObject.FindProperty("_processingPipeline");
-                    if (modulesProp == null || modulesProp.objectReferenceValue == null)
-                    {
-                        EditorGUILayout.LabelField("(none)");
-                        return;
-                    }
-
-                    if (config.ProcessingPipeline is AllProcessingPipelineAsset pipelineAsset)
-                    {
-                        // Nothing to draw in IMGUI; UI Toolkit field handles editing. Provide doc text.
-                    }
-
-                    var runtimePipeline = TryBuildPipeline(pipeline, out var errorMessage);
+                    var runtimePipeline = TryBuildPipeline(pipelineConfig, out var errorMessage);
                     if (runtimePipeline == null)
                     {
-                        EditorGUILayout.HelpBox(errorMessage, MessageType.Warning);
+                        statusBox.messageType = HelpBoxMessageType.Warning;
+                        statusBox.text = errorMessage;
+                        moduleList.ShowEmptyState("Unable to build pipeline.");
                         return;
                     }
 
                     var modules = runtimePipeline.GetProcessingChain();
                     if (modules == null || modules.Count == 0)
                     {
-                        EditorGUILayout.LabelField("No modules configured – data will be stored unprocessed.");
+                        statusBox.messageType = HelpBoxMessageType.Info;
+                        statusBox.text = "No modules configured – data will be stored unprocessed.";
+                        moduleList.ShowEmptyState("Pipeline currently empty.");
+                        return;
                     }
-                    else
+
+                    statusBox.messageType = HelpBoxMessageType.Info;
+                    statusBox.text = $"Configured {modules.Count} module(s).";
+
+                    for (var index = 0; index < modules.Count; index++)
                     {
-                        for (var index = 0; index < modules.Count; index++)
-                        {
-                            var module = modules[index];
-                            EditorGUILayout.LabelField($"{index + 1}. {module.GetType().Name}");
-                        }
+                        var module = modules[index];
+                        moduleList.AddItem($"{index + 1}. {module.GetType().Name}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    EditorGUILayout.HelpBox($"Failed to preview pipeline: {ex.Message}", MessageType.Error);
+                    statusBox.messageType = HelpBoxMessageType.Error;
+                    statusBox.text = $"Failed to preview pipeline: {ex.Message}";
+                    moduleList.ShowEmptyState("Preview unavailable.");
                 }
-            })
-            {
-                style = { marginTop = 4, marginBottom = 4 }
-            };
+            }
 
-            container.Add(list);
-            return container;
+            content.RegisterCallback<GeometryChangedEvent>(_ => RefreshPreview());
+            content.schedule.Execute(RefreshPreview).Every(500);
+
+            return card;
         }
 
         /// <summary>
@@ -222,47 +258,42 @@ namespace FLFloppa.SaveSystem.Editor
         /// Creates the actions row containing validation/build buttons and shortcuts.
         /// </summary>
         /// <returns>Horizontal container with action buttons.</returns>
-        private VisualElement CreateActionsRow()
+        private VisualElement CreateActionsCard()
         {
+            var card = InspectorUi.Cards.Create(
+                "Actions",
+                out var content,
+                "Validate and navigate to related tooling.");
+
             var row = new VisualElement
             {
                 style =
                 {
                     flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.FlexStart,
-                    marginBottom = 6
+                    flexWrap = Wrap.Wrap,
+                    marginTop = InspectorUi.Layout.ButtonSpacing
                 }
             };
 
-            var buildButton = new Button(() => ExecuteBuild())
-            {
-                text = "Validate & Build Service"
-            };
-            buildButton.style.marginRight = 6;
+            row.Add(InspectorUi.Controls.CreateActionButton("Validate & Build Service", ExecuteBuild));
 
-            row.Add(buildButton);
-
-            var pingButton = new Button(() =>
+            row.Add(InspectorUi.Controls.CreateActionButton("Ping Pipeline Asset", () =>
             {
                 var pipeline = ((SaveServiceConfiguration)target).ProcessingPipeline;
                 if (pipeline != null)
                 {
                     EditorGUIUtility.PingObject(pipeline);
                 }
-            })
-            {
-                text = "Ping Pipeline Asset"
-            };
-            row.Add(pingButton);
+            }));
 
-            var observerButton = new Button(() => SaveObserverWindow.ShowWindow((SaveServiceConfiguration)target))
+            row.Add(InspectorUi.Controls.CreateActionButton("Open Save Observer", () =>
             {
-                text = "Open Save Observer"
-            };
-            observerButton.style.marginLeft = 6;
-            row.Add(observerButton);
+                SaveObserverWindow.ShowWindow((SaveServiceConfiguration)target);
+            }));
 
-            return row;
+            content.Add(row);
+
+            return card;
         }
 
         /// <summary>
@@ -296,45 +327,55 @@ namespace FLFloppa.SaveSystem.Editor
         /// <returns>Foldout with storage information.</returns>
         private VisualElement CreateStorageInfo()
         {
-            var foldout = new Foldout { text = "Storage Debug", value = false };
-            var infoLabel = new Label { style = { whiteSpace = WhiteSpace.Normal } };
+            var card = InspectorUi.Cards.Create(
+                "Storage Debug",
+                out var content,
+                "Inspect the resolved storage provider paths.");
 
-            foldout.Add(infoLabel);
+            var infoLabel = InspectorUi.Controls.CreateSummaryLabel(string.Empty);
+            infoLabel.style.whiteSpace = WhiteSpace.Normal;
+            content.Add(infoLabel);
 
-            foldout.RegisterCallback<GeometryChangedEvent>(_ =>
+            void RefreshStorageInfo()
             {
                 try
                 {
                     var config = (SaveServiceConfiguration)target;
                     if (config.StorageProvider is FileSystemStorageProviderAsset fileSystemAsset)
                     {
-                        var provider = fileSystemAsset.Build() as FileSystemStorageProvider;
-                        if (provider != null)
+                        if (fileSystemAsset.Build() is FileSystemStorageProvider provider)
                         {
                             infoLabel.text = $"Resolved Root Path: {provider.RootPath}";
                             return;
                         }
                     }
 
-                    infoLabel.text = "Select FileSystemStorageProvider asset to preview root path.";
+                    infoLabel.text = "Select a `FileSystemStorageProvider` asset to preview the resolved root path.";
                 }
                 catch (Exception ex)
                 {
                     infoLabel.text = $"Unable to resolve storage root: {ex.Message}";
                 }
-            });
+            }
 
-            return foldout;
+            content.RegisterCallback<GeometryChangedEvent>(_ => RefreshStorageInfo());
+            content.schedule.Execute(RefreshStorageInfo).Every(500);
+
+            return card;
         }
 
         /// <summary>
         /// Refreshes the validation container with the latest configuration warnings/errors.
         /// </summary>
         /// <param name="container">Validation container element.</param>
-        private void RefreshValidation(VisualElement container)
+        private void RefreshValidation(InspectorUi.ExpandableLists.ListControl validationList)
         {
-            _latestValidationContainer = container;
-            container.Clear();
+            if (validationList == null)
+            {
+                return;
+            }
+
+            validationList.ClearItems();
 
             var messages = new List<(string Text, HelpBoxMessageType Type)>();
             var config = (SaveServiceConfiguration)target;
@@ -366,10 +407,16 @@ namespace FLFloppa.SaveSystem.Editor
 
             foreach (var (text, type) in messages)
             {
-                container.Add(new HelpBox(text, type)
+                var label = type switch
                 {
-                    style = { marginTop = 2, marginBottom = 2 }
-                });
+                    HelpBoxMessageType.Error => $"❌ {text}",
+                    HelpBoxMessageType.Warning => $"⚠️ {text}",
+                    HelpBoxMessageType.Info => $"ℹ️ {text}",
+                    HelpBoxMessageType.None => text,
+                    _ => text
+                };
+
+                validationList.AddItem(label);
             }
         }
 
@@ -422,14 +469,9 @@ namespace FLFloppa.SaveSystem.Editor
         /// <returns>Configured property field.</returns>
         private PropertyField CreatePropertyField(SerializedProperty property, string label)
         {
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(property.serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }

@@ -1,7 +1,8 @@
 {
   "name": "FLFloppa.SaveSystem.Editor",
   "references": [
-    "FLFloppa.SaveSystem.Runtime"
+    "FLFloppa.SaveSystem.Runtime",
+    "FLFloppa.EditorHelpers"
   ],
   "includePlatforms": [
     "Editor"

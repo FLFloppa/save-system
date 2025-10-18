@@ -1,3 +1,4 @@
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -13,46 +14,29 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("Newtonsoft.Json Serializer");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "Newtonsoft.Json Serializer",
+                "Configure Json.NET behaviors. Type name handling defaults to Auto for polymorphic metadata."));
 
-            root.Add(new Label("Configure Json.NET behaviors. Type name handling defaults to Auto to enable polymorphic metadata in save envelopes."));
+            var settingsCard = InspectorUi.Cards.Create("Serialization Options", out var settingsContent);
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_typeNameHandling"), "Type Name Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_nullValueHandling"), "Null Value Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_missingMemberHandling"), "Missing Member Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_defaultValueHandling"), "Default Value Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_formatting"), "Formatting"));
 
-            root.Add(CreatePropertyField("_typeNameHandling", "Type Name Handling"));
-            root.Add(CreatePropertyField("_nullValueHandling", "Null Value Handling"));
-            root.Add(CreatePropertyField("_missingMemberHandling", "Missing Member Handling"));
-            root.Add(CreatePropertyField("_defaultValueHandling", "Default Value Handling"));
-            root.Add(CreatePropertyField("_formatting", "Formatting"));
+            root.Add(settingsCard);
 
             return root;
         }
 
-        private PropertyField CreatePropertyField(string propertyPath, string label)
+        private VisualElement CreatePropertyField(SerializedProperty property, string label)
         {
-            var property = serializedObject.FindProperty(propertyPath);
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }

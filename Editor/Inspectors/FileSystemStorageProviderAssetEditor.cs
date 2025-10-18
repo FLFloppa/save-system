@@ -1,4 +1,5 @@
 using System.IO;
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,35 +15,37 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
+            var root = InspectorUi.Layout.CreateRoot();
+
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "File System Storage Provider",
+                "Builds a storage provider that writes save files to disk using a strategy-defined root."));
+
+            var pathCard = InspectorUi.Cards.Create("Configuration", out var pathContent);
+            var pathProperty = so.FindProperty("_pathStrategy");
+            pathContent.Add(CreatePropertyField(pathProperty, "Path Strategy"));
+
+            var resolvedCard = InspectorUi.Cards.Create("Resolved Path", out var resolvedContent);
+            var pathLabel = new Label { style = { whiteSpace = WhiteSpace.Normal } };
+            resolvedContent.Add(pathLabel);
+
+            var actionsRow = new VisualElement
             {
                 style =
                 {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginTop = InspectorUi.Layout.ButtonSpacing
                 }
             };
+            actionsRow.Add(InspectorUi.Controls.CreateActionButton("Open Folder", RevealInExplorer));
+            resolvedContent.Add(actionsRow);
 
-            var header = new Label("File System Storage Provider");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
-
-            root.Add(CreatePropertyField("_pathStrategy", "Path Strategy"));
-
-            var pathLabel = new Label { style = { whiteSpace = WhiteSpace.Normal } };
-            root.Add(pathLabel);
+            root.Add(pathCard);
+            root.Add(resolvedCard);
 
             root.RegisterCallback<GeometryChangedEvent>(_ => UpdateResolvedPath(pathLabel));
             root.schedule.Execute(() => UpdateResolvedPath(pathLabel)).Every(500);
-
-            var openButton = new Button(() => RevealInExplorer()) { text = "Open Folder" };
-            openButton.style.marginTop = 4;
-            root.Add(openButton);
 
             return root;
         }
@@ -92,17 +95,11 @@ namespace FLFloppa.SaveSystem.Editor
             }
         }
 
-        private PropertyField CreatePropertyField(string propertyPath, string label)
+        private VisualElement CreatePropertyField(SerializedProperty property, string label)
         {
-            var property = serializedObject.FindProperty(propertyPath);
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }

@@ -1,3 +1,4 @@
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -10,31 +11,19 @@ namespace FLFloppa.SaveSystem.Editor
     {
         public override VisualElement CreateInspectorGUI()
         {
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("GZip Compression Module");
-            header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.fontSize = 13;
-            header.style.marginBottom = 4;
-            root.Add(header);
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "GZip Compression Module",
+                "Compresses payloads during save and decompresses on load. Ideal for large save data."));
 
-            root.Add(new Label("Compresses save payloads with GZip during save and decompresses during load. Recommended for large payloads."));
-
-            var info = new HelpBox(
-                "Note: Compression increases CPU usage. Place this module before encryption in the pipeline for best results.",
+            var overviewCard = InspectorUi.Cards.Create("Usage Guidance", out var overviewContent);
+            InspectorUi.Controls.AddHelpBox(
+                overviewContent,
+                "Compression increases CPU usage. Place this module before encryption to maximize effectiveness.",
                 HelpBoxMessageType.Info);
-            info.style.marginTop = 4;
-            root.Add(info);
+
+            root.Add(overviewCard);
 
             return root;
         }

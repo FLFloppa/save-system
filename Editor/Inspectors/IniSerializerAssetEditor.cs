@@ -1,3 +1,4 @@
+using FLFloppa.EditorHelpers;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -13,58 +14,35 @@ namespace FLFloppa.SaveSystem.Editor
             var so = serializedObject;
             so.Update();
 
-            var root = new VisualElement
-            {
-                style =
-                {
-                    paddingTop = 6,
-                    paddingBottom = 6,
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    flexDirection = FlexDirection.Column
-                }
-            };
+            var root = InspectorUi.Layout.CreateRoot();
 
-            var header = new Label("INI Serializer")
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 13,
-                    marginBottom = 4
-                }
-            };
-            root.Add(header);
+            root.Add(InspectorUi.Layout.CreateHeader(
+                "INI Serializer",
+                "Serializes objects into human-readable INI sections with strongly typed values."));
 
-            root.Add(new Label("Serializes objects into human-readable INI sections with strongly typed values."));
+            var settingsCard = InspectorUi.Cards.Create("Serialization Options", out var settingsContent);
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_typeNameHandling"), "Type Name Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_nullValueHandling"), "Null Value Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_defaultValueHandling"), "Default Value Handling"));
+            settingsContent.Add(CreatePropertyField(so.FindProperty("_missingMemberHandling"), "Missing Member Handling"));
 
-            root.Add(CreatePropertyField("_typeNameHandling", "Type Name Handling"));
-            root.Add(CreatePropertyField("_nullValueHandling", "Null Value Handling"));
-            root.Add(CreatePropertyField("_defaultValueHandling", "Default Value Handling"));
-            root.Add(CreatePropertyField("_missingMemberHandling", "Missing Member Handling"));
+            var guidanceCard = InspectorUi.Cards.Create("Guidance", out var guidanceContent);
+            InspectorUi.Controls.AddHelpBox(
+                guidanceContent,
+                "INI serialization suits debugging and human-editable saves. For binary compatibility or complex nested data, consider `JsonNetSerializer`.",
+                HelpBoxMessageType.Info);
 
-            var infoBox = new HelpBox(
-                "INI serialization is best for debugging and human-editable saves. For binary compatibility or nested complex data, consider JsonNetSerializer.",
-                HelpBoxMessageType.Info)
-            {
-                style = { marginTop = 4 }
-            };
-            root.Add(infoBox);
+            root.Add(settingsCard);
+            root.Add(guidanceCard);
 
             return root;
         }
 
-        private PropertyField CreatePropertyField(string path, string label)
+        private VisualElement CreatePropertyField(SerializedProperty property, string label)
         {
-            var property = serializedObject.FindProperty(path);
-            if (property == null)
-            {
-                return new PropertyField { label = label };
-            }
-
-            var field = new PropertyField(property, label);
-            field.Bind(serializedObject);
-            return field;
+            return property != null
+                ? InspectorUi.Controls.CreatePropertyField(property, label)
+                : new PropertyField { label = label };
         }
     }
 }
